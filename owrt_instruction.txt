@@ -1,0 +1,117 @@
+Add support for ZTE MF289F
+
+It's a 4G Cat.20 router used by Vodafone Italy (called Vodafone FWA) and Vodafone DE (called GigaCube).
+Modem is a MiniPCIe-to-USB based on Snapdragon X24, it supports 4CA aggregation.
+
+There are currently two hardware revisions, which differ on the 5Ghz radio:
+
+AT1 = QCA9984 5Ghz Radio on PCI-E bus
+AT2 = IPQ4019 5Ghz Radio like 2.4Ghz
+
+Device specification
+--------------------
+SoC Type: Qualcomm IPQ4019
+RAM: 256 MiB
+Flash: 128 MiB SPI NAND (Winbond W25N01GV)
+ROM: 2MiB SPI Flash (GD25Q16)
+Wireless 2.4 GHz (IP4019): b/g/n, 2x2
+Wireless 5 GHz (QCA9984): a/n/ac, 4x4 HW REV AT1 OR 5 GHz (IPA4019): a/n/ac, 2x2  HW REV AT2
+Ethernet: 2xGbE (WAN/LAN1, LAN2)
+USB ports: No
+Button: 2 (Reset/WPS)
+LEDs: 3 all white (Network, Wifi, Power) external, 1 internal blue
+Power: 12 VDC, 1 A
+Connector type: Barrel
+Bootloader: U-Boot 
+
+
+Installation
+------------
+1. Place OpenWrt initramfs image for the device on a TFTP in the server's root. This example uses Server IP: 192.168.0.2
+2. Connect serial console (115200,8n1) to serial connector (refer to this image: https://ibb.co/31Gngpr).
+3. Connect TFTP server to RJ-45 port (WAN/LAN1).
+4. Stop in u-Boot (using ESC button) and run u-Boot commands:
+
+setenv serverip 192.168.0.2
+setenv ipaddr 192.168.0.1
+set fdt_high 0x85000000
+tftp openwrt-ipq40xx-generic-zte_mf289f-initramfs-fit-zImage.itb
+bootm $loadaddr
+
+5. Please make backup of original partitions, if you think about revert to stock, specially mtd16 (Web UI) and mtd17 (rootFS).
+Use /tmp as temporary storage and do:
+
+WEB PARITION
+--------------------------------------
+cat /dev/mtd16 > /tmp/mtd16.bin
+scp /tmp/mtd16.bin root@YOURSERVERIP:/
+rm /tmp/mtd16.bin
+
+ROOT PARITION
+--------------------------------------
+cat /dev/mtd17 > /tmp/mtd17.bin
+scp /tmp/mtd17.bin root@YOURSERVERIP:/
+rm /tmp/mtd17.bin
+
+6. Login via ssh or serial and remove stock partitions (default IP 192.168.0.1):
+
+ubiattach -m 17 #it could return error if ubi was attached before or rootfs part was erased before
+ubirmvol /dev/ubi0 -N ubi_rootfs #it could return error if rootfs part was erased before
+ubirmvol /dev/ubi0 -N ubi_rootfs_data #some devices doesn't have it
+
+7. Install image via “sysupgrade -n” (like “sysupgrade -n /tmp/openwrt-ipq40xx-generic-zte_mf289f-squashfs-sysupgrade.bin”; previously wgeting bin).
+Sometimes it could print ubi attach error, but please ignore it if process goes forward.
+
+Flash Layout
+
+NAND:
+mtd8: 000a0000 00020000 "fota-flag"
+mtd9: 00080000 00020000 "0:ART"
+mtd10: 00080000 00020000 "mac"
+mtd11: 000c0000 00020000 "reserved2"
+mtd12: 00400000 00020000 "cfg-param"
+mtd13: 00400000 00020000 "log"
+mtd14: 000a0000 00020000 "oops"
+mtd15: 00500000 00020000 "reserved3"
+mtd16: 00800000 00020000 "web"
+mtd17: 01d00000 00020000 "rootfs"
+mtd18: 01900000 00020000 "data"
+mtd19: 03200000 00020000 "fota"
+mtd20: 0041e000 0001f000 "kernel"
+mtd21: 0101b000 0001f000 "ubi_rootfs"
+
+SPI:
+mtd0: 00040000 00010000 "0:SBL1"
+mtd1: 00020000 00010000 "0:MIBIB"
+mtd2: 00060000 00010000 "0:QSEE"
+mtd3: 00010000 00010000 "0:CDT"
+mtd4: 00010000 00010000 "0:DDRPARAMS"
+mtd5: 00010000 00010000 "0:APPSBLENV"
+mtd6: 000c0000 00010000 "0:APPSBL"
+mtd7: 00050000 00010000 "0:reserved1"
+
+Back to Stock (!!! need original dump taken from initramfs !!!)
+-------------
+1. Place mtd16.bin and mtd17.bin  initramfs image for the device on a TFTP in the server's root. This example uses Server IP: 192.168.0.2
+2. Connect serial console (115200,8n1) to serial console connector (refer to this image: https://ibb.co/31Gngpr).
+3. Connect TFTP server to RJ-45 port (WAN/LAN1).
+4. rename mtd16.bin to web.img and mtd17.bin to root_uImage_s
+5. Stop in u-Boot (using ESC button) and run u-Boot commands:
+
+This will erase RootFS+Web:
+nand erase 0x1000000 0x800000
+
+This will restore RootFS:
+tftpboot 0x84000000 ${dir}root_uImage_s
+nand erase 0x1800000 0x1D00000
+nand write $fileaddr 0x1800000 $filesize
+
+This will restore Web Interface:
+tftpboot 0x84000000 ${dir}web.img
+nand erase 0x1000000 0x800000
+nand write $fileaddr 0x1000000 $filesize
+
+After first boot on stock firwmare, do a factory reset.
+Push reset button for 5 seconds so all parameters will be reverted to the one printed on label on bottom of the router
+
+Important: for AT1 variant, it's necessary to copy "5G_board-2.bin" (into folder https://github.com/stich86/OpenWRT-ZTE-MF289F/tree/main/mf289f_vfit) as "board-2.bin" into "/lib/firmware/ath10k/QCA9984/hw1.0/board"
