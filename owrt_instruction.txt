@@ -99,7 +99,8 @@ Back to Stock (!!! need original dump taken from initramfs !!!)
 5. Stop in u-Boot (using ESC button) and run u-Boot commands:
 
 This will erase RootFS+Web:
-nand erase 0x1000000 0x800000
+nand erase 0x1000000 0x800000 
+nand erase 0x1800000 0x1D00000 
 
 This will restore RootFS:
 tftpboot 0x84000000 ${dir}root_uImage_s
