@@ -26,6 +26,7 @@
                 bootargs-append = " root=/dev/ubiblock0_1";
         };
 
+        /* This node is used to restart modem module to avoid anomalous behaviours on initial communication  */
         gpio-restart {
                 compatible = "gpio-restart";
                 gpios = <&tlmm 8 GPIO_ACTIVE_HIGH>;
@@ -34,15 +35,14 @@
         leds {
                 compatible = "gpio-leds";
 
-                led_internal: led-0 {
+                led_internal: led-internal {
                         function = LED_FUNCTION_STATUS;
                         color = <LED_COLOR_ID_BLUE>;
                         gpios = <&tlmm 10 GPIO_ACTIVE_LOW>;
-                        label = "blue:internal_led";
                         default-state = "keep";
                 };
 
-                led-1 {
+                led_wlan: led-wlan {
                         function = LED_FUNCTION_WLAN;
                         color = <LED_COLOR_ID_BLUE>;
                         gpios = <&tlmm 61 GPIO_ACTIVE_LOW>;
@@ -67,18 +67,6 @@
         };
 
         soc {
-                rng@22000 {
-                        status = "okay";
-                };
-
-                mdio@90000 {
-                        status = "okay";
-                        pinctrl-0 = <&mdio_pins>;
-                        pinctrl-names = "default";
-                        reset-gpios = <&tlmm 47 GPIO_ACTIVE_LOW>;
-                        reset-delay-us = <2000>;
-                };
-
                 ess-psgmii@98000 {
                         status = "okay";
                 };
@@ -109,22 +97,6 @@
                         qcom,wifi_noc_memtype_m0_m2 = <TCSR_WIFI_NOC_MEMTYPE_M0_M2>;
                 };
 
-                usb2@60f8800 {
-                        status = "okay";
-                };
-
-                usb3@8af8800 {
-                        status = "okay";
-                };
-
-                crypto@8e3a000 {
-                        status = "okay";
-                };
-
-                watchdog@b017000 {
-                        status = "okay";
-                };
-
                 ess-switch@c000000 {
                         status = "okay";
                 };
@@ -135,7 +107,31 @@
         };
 };
 
+&prng {
+        status = "okay";
+};
+
+&mdio {
+        status = "okay";
+        pinctrl-0 = <&mdio_pins>;
+        pinctrl-names = "default";
+        reset-gpios = <&tlmm 47 GPIO_ACTIVE_LOW>;
+        reset-delay-us = <2000>;
+};
+
+&watchdog {
+        status = "okay";
+};
+
 &blsp_dma {
+        status = "okay";
+};
+
+&usb2 {
+        status = "okay";
+};
+
+&usb3 {
         status = "okay";
 };
 
@@ -147,7 +143,7 @@
                    <&tlmm 54 GPIO_ACTIVE_HIGH>;
 
         flash@0 {
-                compatible = "jedec,spi-nor", "n25q128a11";
+                compatible = "jedec,spi-nor";
                 #address-cells = <1>;
                 #size-cells = <1>;
                 reg = <0>;
@@ -208,7 +204,7 @@
                 };
         };
 
-        spi-nand@0 {
+        spi-nand@1 {
                 compatible = "spi-nand";
                 reg = <1>;
                 spi-max-frequency = <24000000>;
@@ -312,6 +308,10 @@
         status = "okay";
 };
 
+&crypto {
+        status = "okay";
+};
+
 &cryptobam {
         status = "okay";
 };
@@ -401,14 +401,16 @@
         qcom,ath10k-calibration-variant = "zte,mf289f";
 };
 
+/* This node is used only on AT2 version for 5Ghz on IPQ4019 with board-id=21 */
 &wifi1 {
         status = "okay";
         nvmem-cell-names = "pre-calibration", "mac-address";
         nvmem-cells = <&precal_art_5000>, <&macaddr_config_0>;
-        mac-address-increment = <2>;
+        mac-address-increment = <3>;
         qcom,ath10k-calibration-variant = "zte,mf289f";
 };
 
+/* This node is used only on AT1 version for 5Ghz on QCA9984 */
 &pcie0 {
         status = "okay";
         perst-gpio = <&tlmm 38 GPIO_ACTIVE_LOW>;
@@ -424,7 +426,7 @@
                  wifi2: wifi@1,0 {
                       nvmem-cell-names = "mac-address";
                       nvmem-cells = <&macaddr_config_0>;
-                      mac-address-increment = <3>;
+                      mac-address-increment = <4>;
                       compatible = "qcom,ath10k";
                       reg = <0x00010000 0 0 0 0>;
                       qcom,ath10k-calibration-variant = "zte,mf289f";
