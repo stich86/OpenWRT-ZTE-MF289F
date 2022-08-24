@@ -1,12 +1,10 @@
-Add support for ZTE MF289F
-
-It's a 4G Cat.20 router used by Vodafone Italy (called Vodafone FWA) and Vodafone DE (called GigaCube).
+It's a 4G Cat.20 router used by Vodafone Italy (called Vodafone FWA) and Vodafone DE\T-Mobile PL (called GigaCube).
 Modem is a MiniPCIe-to-USB based on Snapdragon X24, it supports 4CA aggregation.
 
 There are currently two hardware revisions, which differ on the 5Ghz radio:
 
 AT1 = QCA9984 5Ghz Radio on PCI-E bus
-AT2 = IPQ4019 5Ghz Radio like 2.4Ghz
+AT2 = IPQ4019 5Ghz Radio insde IPQ4019 like 2.4Ghz
 
 Device specification
 --------------------
@@ -19,11 +17,10 @@ Wireless 5 GHz (QCA9984): a/n/ac, 4x4 HW REV AT1 OR 5 GHz (IPA4019): a/n/ac, 2x2
 Ethernet: 2xGbE (WAN/LAN1, LAN2)
 USB ports: No
 Button: 2 (Reset/WPS)
-LEDs: 3 all white (Network, Wifi, Power) external, 1 internal blue
+LEDs: 3 external leds: Network (white or red), Wifi, Power and 1 internal (blue)
 Power: 12 VDC, 1 A
 Connector type: Barrel
-Bootloader: U-Boot 
-
+Bootloader: U-Boot
 
 Installation
 ------------
@@ -55,9 +52,9 @@ rm /tmp/mtd17.bin
 
 6. Login via ssh or serial and remove stock partitions (default IP 192.168.0.1):
 
-ubiattach -m 17 #it could return error if ubi was attached before or rootfs part was erased before
-ubirmvol /dev/ubi0 -N ubi_rootfs #it could return error if rootfs part was erased before
-ubirmvol /dev/ubi0 -N ubi_rootfs_data #some devices doesn't have it
+ubiattach -m 17 # it could return error if ubi was attached before or rootfs part was erased before
+ubirmvol /dev/ubi0 -N ubi_rootfs # it could return error if rootfs part was erased before
+ubirmvol /dev/ubi0 -N ubi_rootfs_data # some devices doesn't have it
 
 7. Install image via “sysupgrade -n” (like “sysupgrade -n /tmp/openwrt-ipq40xx-generic-zte_mf289f-squashfs-sysupgrade.bin”; previously wgeting bin).
 Sometimes it could print ubi attach error, but please ignore it if process goes forward.
@@ -99,8 +96,8 @@ Back to Stock (!!! need original dump taken from initramfs !!!)
 5. Stop in u-Boot (using ESC button) and run u-Boot commands:
 
 This will erase RootFS+Web:
-nand erase 0x1000000 0x800000 
-nand erase 0x1800000 0x1D00000 
+nand erase 0x1000000 0x800000
+nand erase 0x1800000 0x1D00000
 
 This will restore RootFS:
 tftpboot 0x84000000 ${dir}root_uImage_s
@@ -114,5 +111,3 @@ nand write $fileaddr 0x1000000 $filesize
 
 After first boot on stock firwmare, do a factory reset.
 Push reset button for 5 seconds so all parameters will be reverted to the one printed on label on bottom of the router
-
-Important: for AT1 variant, it's necessary to copy "5G_board-2.bin" (into folder https://github.com/stich86/OpenWRT-ZTE-MF289F/tree/main/mf289f_vfit) as "board-2.bin" into "/lib/firmware/ath10k/QCA9984/hw1.0/board"
